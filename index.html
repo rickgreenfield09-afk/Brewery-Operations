@@ -323,7 +323,7 @@ tr:hover td{background:var(--raised);}
   <div class="login-card">
     <div class="login-logo">
       <img src="https://opsplpqvordihoktuqzp.supabase.co/storage/v1/object/public/assets/lvbc-logo.png"
-           alt="LVBC" onerror="this.style.display='none'">
+           alt="LVBC" onerror="this.remove()">
       <div class="login-wordmark">LVBC</div>
     </div>
     <div class="login-app-name">Brewery Operations</div>
@@ -1053,12 +1053,12 @@ function renderBeerList() {
         ? '<span class="badge badge-red">Retired</span>'
         : b.is_new_release
           ? '<span class="badge badge-amber">New</span>'
-          : '<span style="font-size:11px;color:var(--sub);font-family:'DM Mono',monospace">Active</span>';
+          : '<span style="font-size:11px;color:var(--sub);font-family:DM Mono,monospace">Active</span>';
       var isSelected = b.id === selectedBeerId;
       return '<tr onclick="selectBeer(' + b.id + ')" style="cursor:pointer' + (isSelected ? ';background:rgba(0,229,204,0.06)' : '') + '">'
         + '<td style="font-weight:500' + (isSelected ? ';color:var(--teal)' : '') + '">' + b.name + '</td>'
         + '<td style="font-size:12px;color:var(--sub)">' + (b.style || '—') + '</td>'
-        + '<td style="font-family:'DM Mono',monospace;font-size:12px">' + (b.abv ? b.abv + '%' : '—') + '</td>'
+        + '<td style="font-family:DM Mono,monospace;font-size:12px">' + (b.abv ? b.abv + '%' : '—') + '</td>'
         + '<td>' + statusBadge + '</td>'
         + '</tr>';
     }).join('') + '</tbody></table></div>';
@@ -1082,45 +1082,66 @@ function renderBeerDetail(b) {
   var badges = '';
   if (b.is_new_release && !b.retired) badges += '<span class="badge badge-amber" style="margin-right:6px">★ New Release</span>';
   if (b.retired) badges += '<span class="badge badge-red" style="margin-right:6px">Retired</span>';
-  if (b.badge_new) badges += '<span class="badge badge-teal" style="margin-right:6px">New</span>';
-  if (b.badge_back_again) badges += '<span class="badge badge-purple" style="margin-right:6px">Back Again</span>';
   if (b.badge_seasonal) badges += '<span class="badge badge-green" style="margin-right:6px">Seasonal</span>';
   if (b.badge_limited) badges += '<span class="badge badge-amber" style="margin-right:6px">Limited</span>';
-  if (b.badge_collab) badges += '<span class="badge badge-blue" style="margin-right:6px">Collab</span>';
+  if (b.badge_collab) badges += '<span class="badge badge-purple" style="margin-right:6px">Collab</span>';
 
   var stats = '';
-  if (b.abv) stats += '<div style="background:var(--raised);border-radius:6px;padding:10px 14px;text-align:center"><div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">ABV</div><div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text)">' + b.abv + '%</div></div>';
-  if (b.ibu) stats += '<div style="background:var(--raised);border-radius:6px;padding:10px 14px;text-align:center"><div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">IBU</div><div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text)">' + b.ibu + '</div></div>';
-  if (b.srm) stats += '<div style="background:var(--raised);border-radius:6px;padding:10px 14px;text-align:center"><div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">SRM</div><div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text)">' + b.srm + '</div></div>';
-  if (b.og) stats += '<div style="background:var(--raised);border-radius:6px;padding:10px 14px;text-align:center"><div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">OG</div><div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text)">' + b.og + '</div></div>';
-  if (b.fg) stats += '<div style="background:var(--raised);border-radius:6px;padding:10px 14px;text-align:center"><div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">FG</div><div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text)">' + b.fg + '</div></div>';
-
-  var actions = '';
-  if (!b.retired) {
-    var newRelLabel = b.is_new_release ? 'Remove New Release Flag' : '★ Mark as New Release';
-    actions += '<button class="btn btn-sm" onclick="toggleNewRelease(' + b.id + ',' + b.is_new_release + ')" style="background:rgba(255,224,64,0.1);color:var(--amber-dim);border:1px solid rgba(255,224,64,0.25)">' + newRelLabel + '</button>';
-    actions += '<button class="btn btn-sm btn-danger" onclick="retireBeer(' + b.id + ','' + b.name.replace(/'/g,"\'") + '')">Retire Beer</button>';
-  } else {
-    actions += '<button class="btn btn-sm btn-success" onclick="restoreBeer(' + b.id + ','' + b.name.replace(/'/g,"\'") + '')">Restore to Tap</button>';
-  }
-  actions += '<button class="btn btn-sm btn-secondary" onclick="goToRecipe(' + b.id + ','' + b.name.replace(/'/g,"\'") + '')">View Recipe →</button>';
-  actions += '<button class="btn btn-sm btn-secondary" onclick="document.getElementById('beer-detail-panel').style.display='none';selectedBeerId=null;renderBeerList()">✕ Close</button>';
+  if (b.abv) stats += '<div style="background:var(--raised);border-radius:6px;padding:10px 14px;text-align:center"><div style="font-size:10px;font-family:DM Mono,monospace;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">ABV</div><div style="font-family:Bebas Neue,sans-serif;font-size:22px;color:var(--text)">' + b.abv + '%</div></div>';
+  if (b.ibu) stats += '<div style="background:var(--raised);border-radius:6px;padding:10px 14px;text-align:center"><div style="font-size:10px;font-family:DM Mono,monospace;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">IBU</div><div style="font-family:Bebas Neue,sans-serif;font-size:22px;color:var(--text)">' + b.ibu + '</div></div>';
+  if (b.srm) stats += '<div style="background:var(--raised);border-radius:6px;padding:10px 14px;text-align:center"><div style="font-size:10px;font-family:DM Mono,monospace;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">SRM</div><div style="font-family:Bebas Neue,sans-serif;font-size:22px;color:var(--text)">' + b.srm + '</div></div>';
+  if (b.og) stats += '<div style="background:var(--raised);border-radius:6px;padding:10px 14px;text-align:center"><div style="font-size:10px;font-family:DM Mono,monospace;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">OG</div><div style="font-family:Bebas Neue,sans-serif;font-size:22px;color:var(--text)">' + b.og + '</div></div>';
+  if (b.fg) stats += '<div style="background:var(--raised);border-radius:6px;padding:10px 14px;text-align:center"><div style="font-size:10px;font-family:DM Mono,monospace;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">FG</div><div style="font-family:Bebas Neue,sans-serif;font-size:22px;color:var(--text)">' + b.fg + '</div></div>';
 
   card.innerHTML = '<div style="display:flex;gap:20px;align-items:flex-start">'
-    + (b.image_url ? '<img src="' + b.image_url + '" style="width:100px;height:100px;object-fit:cover;border-radius:8px;border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'">' : '')
+    + (b.image_url ? '<img src="' + b.image_url + '" style="width:100px;height:100px;object-fit:cover;border-radius:8px;border:1px solid var(--border);flex-shrink:0" id="beer-detail-img">' : '')
     + '<div style="flex:1">'
     + (badges ? '<div style="margin-bottom:10px">' + badges + '</div>' : '')
-    + '<div style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px;margin-bottom:2px">' + b.name + '</div>'
+    + '<div style="font-family:Bebas Neue,sans-serif;font-size:28px;letter-spacing:1px;margin-bottom:2px">' + b.name + '</div>'
     + '<div style="font-size:13px;color:var(--sub);margin-bottom:' + (stats ? '16px' : '0') + '">' + (b.style || '') + '</div>'
     + (stats ? '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">' + stats + '</div>' : '')
-    + (b.description ? '<div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Description</div><div style="font-size:13px;color:var(--sub);line-height:1.6;margin-bottom:12px">' + b.description + '</div>' : '')
-    + (b.tasting_notes ? '<div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Tasting Notes</div><div style="font-size:13px;color:var(--sub);line-height:1.6;margin-bottom:12px">' + b.tasting_notes + '</div>' : '')
-    + (tappedOn ? '<div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:4px">Tapped: ' + tappedOn + '</div>' : '')
-    + (retiredOn ? '<div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--red);margin-bottom:4px">Retired: ' + retiredOn + '</div>' : '')
-    + '</div>'
-    + '</div>'
-    + '<div style="border-top:1px solid var(--border);margin-top:16px;padding-top:16px;display:flex;gap:10px;flex-wrap:wrap">' + actions + '</div>';
+    + (b.description ? '<div style="font-size:11px;font-family:DM Mono,monospace;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Description</div><div style="font-size:13px;color:var(--sub);line-height:1.6;margin-bottom:12px">' + b.description + '</div>' : '')
+    + (b.tasting_notes ? '<div style="font-size:11px;font-family:DM Mono,monospace;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Tasting Notes</div><div style="font-size:13px;color:var(--sub);line-height:1.6;margin-bottom:12px">' + b.tasting_notes + '</div>' : '')
+    + (tappedOn ? '<div style="font-size:11px;font-family:DM Mono,monospace;color:var(--muted);margin-bottom:4px">Tapped: ' + tappedOn + '</div>' : '')
+    + (retiredOn ? '<div style="font-size:11px;font-family:DM Mono,monospace;color:var(--red);margin-bottom:4px">Retired: ' + retiredOn + '</div>' : '')
+    + '</div></div>'
+    + '<div style="border-top:1px solid var(--border);margin-top:16px;padding-top:16px;display:flex;gap:10px;flex-wrap:wrap" id="beer-detail-actions"></div>';
+
+  var actDiv = document.getElementById('beer-detail-actions');
+  if (!b.retired) {
+    var newRelBtn = document.createElement('button');
+    newRelBtn.className = 'btn btn-sm';
+    newRelBtn.style.cssText = 'background:rgba(255,224,64,0.1);color:var(--amber-dim);border:1px solid rgba(255,224,64,0.25)';
+    newRelBtn.textContent = b.is_new_release ? 'Remove New Release Flag' : '★ Mark as New Release';
+    newRelBtn.onclick = function() { toggleNewRelease(b.id, b.is_new_release); };
+    actDiv.appendChild(newRelBtn);
+
+    var retireBtn = document.createElement('button');
+    retireBtn.className = 'btn btn-sm btn-danger';
+    retireBtn.textContent = 'Retire Beer';
+    retireBtn.onclick = function() { retireBeer(b.id, b.name); };
+    actDiv.appendChild(retireBtn);
+  } else {
+    var restoreBtn = document.createElement('button');
+    restoreBtn.className = 'btn btn-sm btn-success';
+    restoreBtn.textContent = 'Restore to Tap';
+    restoreBtn.onclick = function() { restoreBeer(b.id, b.name); };
+    actDiv.appendChild(restoreBtn);
+  }
+
+  var recipeBtn = document.createElement('button');
+  recipeBtn.className = 'btn btn-sm btn-secondary';
+  recipeBtn.textContent = 'View Recipe →';
+  recipeBtn.onclick = function() { showToast('Recipe screen coming soon — ' + b.name, 'warn'); };
+  actDiv.appendChild(recipeBtn);
+
+  var closeBtn = document.createElement('button');
+  closeBtn.className = 'btn btn-sm btn-secondary';
+  closeBtn.textContent = '✕ Close';
+  closeBtn.onclick = function() { document.getElementById('beer-detail-panel').style.display = 'none'; selectedBeerId = null; renderBeerList(); };
+  actDiv.appendChild(closeBtn);
 }
+
 
 async function addBeer() {
   var name = document.getElementById('beer-new-name').value.trim();
@@ -1160,9 +1181,7 @@ async function toggleNewRelease(beerId, currentState) {
 }
 
 async function retireBeer(beerId, beerName) {
-  if (!confirm('Retire "' + beerName + '"?
-
-This removes it from the active tap list. It can be restored later.')) return;
+  if (!confirm('Retire ' + beerName + '? This removes it from the active tap list. It can be restored later.')) return;
   try {
     await sb('beers?id=eq.' + beerId, { method: 'PATCH', body: JSON.stringify({ retired: true, is_on_tap: false, retired_on: new Date().toISOString() }) });
     showToast('🪦 ' + beerName + ' retired');
@@ -1173,7 +1192,7 @@ This removes it from the active tap list. It can be restored later.')) return;
 }
 
 async function restoreBeer(beerId, beerName) {
-  if (!confirm('Restore "' + beerName + '" to the active tap list?')) return;
+  if (!confirm('Restore ' + beerName + ' to the active tap list?')) return;
   try {
     await sb('beers?id=eq.' + beerId, { method: 'PATCH', body: JSON.stringify({ retired: false, is_on_tap: true, retired_on: null }) });
     showToast('✓ ' + beerName + ' restored to tap list');
