@@ -647,16 +647,16 @@ async function hashPin(pin) {
 async function loadUserList() {
   var el = document.getElementById('user-list');
   try {
-    var users = await sb('users?select=id,full_name,role&order=full_name.asc');
+    var users = await sb('users?select=id,display_name,role&order=display_name.asc');
     if (!users.length) {
       el.innerHTML = '<div style="font-size:13px;color:var(--sub)">No staff users found.<br>Add users in Supabase first.</div>';
       return;
     }
     el.innerHTML = users.map(function(u) {
-      var initials = u.full_name.split(' ').map(function(p){return p[0];}).join('').substring(0,2).toUpperCase();
-      return '<div class="user-btn" onclick="selectUser(' + u.id + ',\'' + u.full_name.replace(/'/g,"\\'") + '\',\'' + u.role + '\')" id="ubtn-' + u.id + '">'
+      var initials = u.display_name.split(' ').map(function(p){return p[0];}).join('').substring(0,2).toUpperCase();
+      return '<div class="user-btn" onclick="selectUser(' + u.id + ',\'' + u.display_name.replace(/'/g,"\\'") + '\',\'' + u.role + '\')" id="ubtn-' + u.id + '">'
         + '<div class="user-initials">' + initials + '</div>'
-        + '<div><div class="user-info-name">' + u.full_name + '</div>'
+        + '<div><div class="user-info-name">' + u.display_name + '</div>'
         + '<div class="user-info-role">' + u.role + '</div></div>'
         + '</div>';
     }).join('');
@@ -748,7 +748,7 @@ function pinBack() {
 async function submitPin() {
   var hashed = await hashPin(pinBuffer);
   try {
-    var rows = await sb('users?id=eq.' + selectedUserId + '&select=id,full_name,role,pin_hash');
+    var rows = await sb('users?id=eq.' + selectedUserId + '&select=id,display_name,role,pin_hash');
     if (!rows.length) { pinError(); return; }
     var user = rows[0];
     if (user.pin_hash !== hashed) {
@@ -827,7 +827,7 @@ async function saveNewPin() {
   try {
     var hashed = await hashPin(createPinFirst);
     await sb('users?id=eq.' + selectedUserId, { method: 'PATCH', body: JSON.stringify({ pin_hash: hashed }) });
-    var rows = await sb('users?id=eq.' + selectedUserId + '&select=id,full_name,role');
+    var rows = await sb('users?id=eq.' + selectedUserId + '&select=id,display_name,role');
     if (rows.length) loginSuccess(rows[0]);
   } catch(e) {
     document.getElementById('create-pin-error').textContent = 'Error saving PIN — try again';
@@ -840,7 +840,7 @@ function loginSuccess(user) {
   currentUser = user;
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-shell').classList.add('visible');
-  document.getElementById('header-staff-name').textContent = user.full_name;
+  document.getElementById('header-staff-name').textContent = user.display_name;
   applyRoleVisibility(user.role);
   loadDashboard();
 }
