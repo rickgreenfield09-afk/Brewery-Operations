@@ -688,27 +688,36 @@ function showToast(msg, type) {
 // ── LOGIN FLOW ─────────────────────────────────────────
 async function loadUserList() {
   var el = document.getElementById('user-list');
+  // Timeout safety — never hang forever
+  var timeout = setTimeout(function() {
+    if (el.textContent.trim() === 'Loading staff...') {
+      el.innerHTML = '<div style="font-size:12px;color:var(--sub)">Connection timed out.<br>Check network and refresh.</div>';
+    }
+  }, 6000);
   try {
     var users = await sb('users?select=id,display_name,role&order=display_name.asc');
-    if (!users.length) {
+    clearTimeout(timeout);
+    if (!users || !users.length) {
       el.innerHTML = '<div style="font-size:13px;color:var(--sub)">No staff users found.<br>Add users in Supabase first.</div>';
       return;
     }
     el.innerHTML = '';
     users.forEach(function(u) {
-      var initials = u.display_name.split(' ').map(function(p){return p[0];}).join('').substring(0,2).toUpperCase();
+      var name = u.display_name || u.email || 'Unknown';
+      var initials = name.split(' ').map(function(p){return p[0];}).join('').substring(0,2).toUpperCase();
       var div = document.createElement('div');
       div.className = 'user-btn';
       div.id = 'ubtn-' + u.id;
       div.innerHTML = '<div class="user-initials">' + initials + '</div>'
-        + '<div><div class="user-info-name">' + u.display_name + '</div>'
-        + '<div class="user-info-role">' + u.role + '</div></div>';
-      div.addEventListener('click', function() { selectUser(u.id, u.display_name, u.role); });
+        + '<div><div class="user-info-name">' + name + '</div>'
+        + '<div class="user-info-role">' + (u.role || '') + '</div></div>';
+      div.addEventListener('click', function() { selectUser(u.id, name, u.role); });
       el.appendChild(div);
     });
   } catch(e) {
-    el.innerHTML = '<div style="font-size:12px;color:var(--sub)">Could not load staff list.<br>Check Supabase connection.</div>';
-    console.error(e);
+    clearTimeout(timeout);
+    el.innerHTML = '<div style="font-size:12px;color:var(--sub)">Could not load staff list.<br>' + e.message + '</div>';
+    console.error('loadUserList error:', e);
   }
 }
 
