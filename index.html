@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LVBC Brewery Operations</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#0D1117;--surface:#161C26;--raised:#1E2733;--header:#3E4E6C;
+  --teal:#00E5CC;--teal-mid:#4AB8D4;--teal-dim:#2AB8A6;
+  --green:#3DC49A;--amber-dim:#E8B84B;--red:#FF4D6A;--purple:#BF5FFF;
+  --text:#F2EDE4;--sub:#8A9BB0;--muted:#4A5568;--border:#2E3440;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--void);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column;}
+#login-screen{position:fixed;inset:0;background:var(--void);display:flex;align-items:center;justify-content:center;z-index:1000;}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:40px 48px;width:380px;text-align:center;}
+.login-logo{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:8px;}
+.login-logo img{width:48px;height:48px;object-fit:contain;}
+.login-wordmark{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:3px;color:var(--teal);}
+.login-app-name{font-size:11px;font-family:'DM Mono',monospace;color:var(--sub);letter-spacing:2px;text-transform:uppercase;margin-bottom:32px;}
+.login-label{font-size:11px;font-family:'DM Mono',monospace;color:var(--sub);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px;}
+.pin-dots{display:flex;gap:14px;justify-content:center;margin-bottom:24px;}
+.pin-dot{width:16px;height:16px;border-radius:50%;background:var(--raised);border:2px solid var(--border);transition:all 0.15s;}
+.pin-dot.filled{background:var(--teal);border-color:var(--teal);}
+.pin-dot.error{background:var(--red);border-color:var(--red);}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.pin-btn{background:var(--raised);border:1px solid var(--border);border-radius:8px;padding:16px 0;font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--text);cursor:pointer;transition:all 0.12s;user-select:none;}
+.pin-btn:hover{background:var(--header);border-color:var(--muted);}
+.pin-btn:active{transform:scale(0.95);}
+.pin-btn.zero{grid-column:2;}
+.pin-btn.back{font-family:'DM Sans',sans-serif;font-size:18px;color:var(--sub);}
+.login-error{font-size:12px;font-family:'DM Mono',monospace;color:var(--red);min-height:16px;margin-top:4px;}
+.user-list{display:flex;flex-direction:column;gap:8px;margin-bottom:24px;}
+.user-btn{background:var(--raised);border:1px solid var(--border);border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all 0.12s;text-align:left;}
+.user-btn:hover{border-color:var(--teal-dim);}
+.user-btn.selected{border-color:var(--teal);background:rgba(0,229,204,0.06);}
+.user-initials{width:36px;height:36px;border-radius:50%;background:var(--header);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--teal);flex-shrink:0;}
+.user-name{font-size:14px;font-weight:500;}
+.user-role{font-size:11px;font-family:'DM Mono',monospace;color:var(--sub);text-transform:uppercase;letter-spacing:1px;}
+.login-step{display:none;}
+.login-step.active{display:block;}
+#app-shell{display:none;flex-direction:column;height:100vh;overflow:hidden;}
+#app-shell.visible{display:flex;}
+header{background:var(--header);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-shrink:0;position:sticky;top:0;z-index:100;}
+.logo-wrap{display:flex;align-items:center;gap:12px;}
+.logo-img{width:36px;height:36px;object-fit:contain;}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--teal);}
+.logo span{color:var(--text);opacity:0.5;font-size:13px;font-family:'DM Mono',monospace;letter-spacing:1px;margin-left:12px;vertical-align:middle;}
+.hdr-right{display:flex;align-items:center;gap:12px;}
+.staff-name{font-size:12px;color:var(--teal-mid);font-family:'DM Mono',monospace;}
+.online-badge{background:var(--raised);border:1px solid var(--border);border-radius:20px;padding:4px 14px;font-size:12px;color:var(--sub);font-family:'DM Mono',monospace;}
+.btn-signout{background:none;border:1px solid rgba(138,155,176,0.4);border-radius:6px;padding:4px 10px;font-size:11px;font-family:'DM Mono',monospace;color:var(--sub);cursor:pointer;}
+.btn-signout:hover{color:var(--red);border-color:var(--red);}
+nav{background:var(--surface);border-bottom:1px solid var(--border);display:flex;padding:0 24px;gap:4px;flex-shrink:0;position:sticky;top:56px;z-index:99;}
+nav::-webkit-scrollbar{display:none;}
+.nav-btn{background:none;border:none;color:var(--sub);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;padding:12px 16px;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.nav-btn:hover{color:var(--text);}
+.nav-btn.active{color:var(--teal);border-bottom-color:var(--teal);}
+main{flex:1;padding:24px;overflow-y:auto;}
+.screen{display:none;animation:fadeIn 0.2s ease;}
+.screen.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.page-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px;margin-bottom:16px;}
+.sec-label{font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;}
+.card-title{font-size:11px;font-family:'DM Mono',monospace;color:var(--sub);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;}
+.card-val{font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--text);line-height:1;}
+.card-val.teal{color:var(--teal);}
+.card-val.amber{color:var(--amber-dim);}
+.card-val.green{color:var(--green);}
+.card-sub{font-size:12px;color:var(--sub);margin-top:4px;}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px;}
+/* grid2: stretch columns so left card fills height of right list */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+.grid2-col{display:flex;flex-direction:column;}
+.grid2-col .card{flex:1;}
+.btn{padding:10px 20px;border-radius:6px;border:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s;}
+.btn-primary{background:var(--teal);color:var(--void);}
+.btn-primary:hover{background:#20f5db;}
+.btn-secondary{background:var(--raised);color:var(--text);border:1px solid var(--border);}
+.btn-secondary:hover{border-color:var(--teal-dim);color:var(--teal);}
+.btn-danger{background:rgba(255,77,106,0.12);color:var(--red);border:1px solid rgba(255,77,106,0.25);}
+.btn-success{background:rgba(61,196,154,0.12);color:var(--green);border:1px solid rgba(61,196,154,0.25);}
+.btn-sm{padding:6px 14px;font-size:12px;}
+.form-grp{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
+.form-lbl{font-size:11px;font-family:'DM Mono',monospace;color:var(--sub);letter-spacing:1px;text-transform:uppercase;}
+.form-inp,.form-sel,.form-ta{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color 0.15s;width:100%;}
+.form-inp:focus,.form-sel:focus,.form-ta:focus{border-color:var(--teal-dim);}
+.form-inp::placeholder,.form-ta::placeholder{color:var(--muted);}
+.form-ta{resize:vertical;min-height:80px;line-height:1.5;}
+.form-sel option{background:var(--surface);}
+.form-sel.placeholder{color:var(--muted);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.tbl-wrap{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+table{width:100%;border-collapse:collapse;}
+thead{background:var(--raised);}
+th{padding:10px 16px;text-align:left;font-size:11px;font-family:'DM Mono',monospace;color:var(--sub);letter-spacing:1px;text-transform:uppercase;font-weight:400;}
+td{padding:12px 16px;font-size:13px;border-top:1px solid var(--border);}
+tr:hover td{background:var(--raised);}
+.badge{display:inline-block;font-size:10px;font-family:'DM Mono',monospace;padding:2px 8px;border-radius:10px;}
+.badge-teal{background:rgba(0,229,204,0.12);color:var(--teal);border:1px solid rgba(0,229,204,0.25);}
+.badge-amber{background:rgba(232,184,75,0.12);color:var(--amber-dim);border:1px solid rgba(232,184,75,0.25);}
+.badge-red{background:rgba(255,77,106,0.12);color:var(--red);border:1px solid rgba(255,77,106,0.25);}
+.badge-green{background:rgba(61,196,154,0.12);color:var(--green);border:1px solid rgba(61,196,154,0.25);}
+.badge-purple{background:rgba(191,95,255,0.12);color:var(--purple);border:1px solid rgba(191,95,255,0.25);}
+.badge-muted{background:rgba(74,85,104,0.2);color:var(--sub);border:1px solid var(--border);}
+.badge-blue{background:rgba(61,155,255,0.12);color:#3D9BFF;border:1px solid rgba(61,155,255,0.25);}
+.loading{color:var(--muted);font-size:13px;font-family:'DM Mono',monospace;padding:20px;text-align:center;}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--teal);color:var(--void);padding:12px 20px;border-radius:8px;font-weight:600;font-size:14px;transform:translateY(80px);opacity:0;transition:all 0.3s ease;z-index:3000;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.error{background:var(--red);color:white;}
+.toast.warn{background:var(--amber-dim);color:var(--void);}
+.sub-tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--border);}
+.sub-tab{background:none;border:none;color:var(--sub);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;padding:10px 18px;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;margin-bottom:-1px;}
+.sub-tab:hover{color:var(--text);}
+.sub-tab.active{color:var(--teal);border-bottom-color:var(--teal);}
+.sub-sec{display:none;}
+.sub-sec.active{display:block;animation:fadeIn 0.2s ease;}
+.stub{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;gap:12px;}
+.stub-icon{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:2px;color:var(--teal);opacity:0.25;}
+.stub-title{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;color:var(--sub);}
+.stub-sub{font-size:12px;font-family:'DM Mono',monospace;color:var(--muted);}
+/* Badge picker */
+.badge-picker{display:flex;flex-wrap:wrap;gap:8px;}
+.badge-pill{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--raised);cursor:pointer;font-size:12px;font-family:'DM Mono',monospace;color:var(--sub);transition:all 0.15s;user-select:none;}
+.badge-pill:hover{border-color:var(--muted);}
+.badge-pill.selected{border-color:var(--teal);background:rgba(0,229,204,0.08);color:var(--teal);}
+.badge-pill.selected.amber{border-color:var(--amber-dim);background:rgba(232,184,75,0.08);color:var(--amber-dim);}
+.badge-pill.selected.purple{border-color:var(--purple);background:rgba(191,95,255,0.08);color:var(--purple);}
+.badge-pill.selected.green{border-color:var(--green);background:rgba(61,196,154,0.08);color:var(--green);}
+.badge-pill.selected.red{border-color:var(--red);background:rgba(255,77,106,0.08);color:var(--red);}
+.badge-pill.selected.blue{border-color:#3D9BFF;background:rgba(61,155,255,0.08);color:#3D9BFF;}
+.badge-pill.selected.teal{border-color:var(--teal);background:rgba(0,229,204,0.08);color:var(--teal);}
+.badge-pill-dot{width:8px;height:8px;border-radius:50%;background:currentColor;opacity:0.7;}
+/* Status badge with popover */
+.status-cell{position:relative;display:inline-block;}
+.status-popover{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--raised);border:1px solid var(--border);border-radius:8px;padding:10px 14px;min-width:160px;z-index:200;display:none;box-shadow:0 4px 16px rgba(0,0,0,0.4);}
+.status-popover.show{display:block;}
+.status-popover-arrow{position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);width:8px;height:8px;background:var(--raised);border-right:1px solid var(--border);border-bottom:1px solid var(--border);transform:translateX(-50%) rotate(45deg);}
+.status-popover-title{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;}
+.status-popover-badges{display:flex;flex-wrap:wrap;gap:6px;}
+/* Type dropdown other input */
+.type-other-inp{display:none;margin-top:8px;}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="https://opsplpqvordihoktuqzp.supabase.co/storage/v1/object/public/assets/lvbc-logo.png" alt="LVBC" onerror="this.remove()">
+      <div class="login-wordmark">LVBC</div>
+    </div>
+    <div class="login-app-name">Brewery Operations</div>
+    <div class="login-step active" id="step-pick">
+      <div class="login-label">Who's signing in?</div>
+      <div class="user-list" id="user-list"><div class="loading">Loading staff...</div></div>
+    </div>
+    <div class="login-step" id="step-pin">
+      <div id="pin-greeting" style="font-size:14px;font-weight:500;margin-bottom:16px;">Enter your PIN</div>
+      <div class="pin-dots">
+        <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
+        <div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div>
+      </div>
+      <div class="pin-grid">
+        <button class="pin-btn" id="p1">1</button><button class="pin-btn" id="p2">2</button><button class="pin-btn" id="p3">3</button>
+        <button class="pin-btn" id="p4">4</button><button class="pin-btn" id="p5">5</button><button class="pin-btn" id="p6">6</button>
+        <button class="pin-btn" id="p7">7</button><button class="pin-btn" id="p8">8</button><button class="pin-btn" id="p9">9</button>
+        <button class="pin-btn zero" id="p0">0</button><button class="pin-btn back" id="pbk">&#9003;</button>
+      </div>
+      <div class="login-error" id="pin-err"></div>
+      <button class="btn btn-secondary btn-sm" style="margin-top:12px;width:100%" id="btn-back">&#8592; Back</button>
+    </div>
+    <div class="login-step" id="step-create">
+      <div id="create-lbl" style="font-size:13px;color:var(--sub);margin-bottom:16px;">Create a 4-digit PIN</div>
+      <div class="pin-dots">
+        <div class="pin-dot" id="c0"></div><div class="pin-dot" id="c1"></div>
+        <div class="pin-dot" id="c2"></div><div class="pin-dot" id="c3"></div>
+      </div>
+      <div class="pin-grid">
+        <button class="pin-btn" id="cp1">1</button><button class="pin-btn" id="cp2">2</button><button class="pin-btn" id="cp3">3</button>
+        <button class="pin-btn" id="cp4">4</button><button class="pin-btn" id="cp5">5</button><button class="pin-btn" id="cp6">6</button>
+        <button class="pin-btn" id="cp7">7</button><button class="pin-btn" id="cp8">8</button><button class="pin-btn" id="cp9">9</button>
+        <button class="pin-btn zero" id="cp0">0</button><button class="pin-btn back" id="cpbk">&#9003;</button>
+      </div>
+      <div class="login-error" id="create-err"></div>
+      <button class="btn btn-secondary btn-sm" style="margin-top:12px;width:100%" id="btn-cancel">&#8592; Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="app-shell">
+  <header>
+    <div class="logo-wrap">
+      <img class="logo-img" src="https://opsplpqvordihoktuqzp.supabase.co/storage/v1/object/public/assets/lvbc-logo.png" alt="LVBC" onerror="this.remove()">
+      <div class="logo">LVBC <span>BREWERY OPS</span></div>
+    </div>
+    <div class="hdr-right">
+      <span class="staff-name" id="hdr-name"></span>
+      <div class="online-badge">&#9679; ONLINE</div>
+      <button class="btn-signout" id="btn-signout">Sign Out</button>
+    </div>
+  </header>
+  <nav id="main-nav">
+    <button class="nav-btn active" data-screen="dashboard">Dashboard</button>
+    <button class="nav-btn" data-screen="inventory">Inventory</button>
+    <button class="nav-btn" data-screen="orders">Orders</button>
+    <button class="nav-btn" data-screen="beers">Beers &amp; Menu</button>
+    <button class="nav-btn" data-screen="events">Events</button>
+    <button class="nav-btn" data-screen="schedule">Schedule</button>
+    <button class="nav-btn" data-screen="members">Members</button>
+    <button class="nav-btn" data-screen="admin" id="nav-admin">Admin</button>
+  </nav>
+  <main>
+
+    <!-- DASHBOARD -->
+    <div class="screen active" id="screen-dashboard">
+      <div class="page-title">Dashboard</div>
+      <div style="font-size:13px;color:var(--sub);font-family:'DM Mono',monospace;margin-bottom:20px;" id="dash-date"></div>
+      <div class="grid4">
+        <div class="card"><div class="card-title">Inventory Alerts</div><div class="card-val amber" id="stat-alerts">&#8212;</div><div class="card-sub">items low</div></div>
+        <div class="card"><div class="card-title">Open Orders</div><div class="card-val teal" id="stat-orders">&#8212;</div><div class="card-sub">pending delivery</div></div>
+        <div class="card"><div class="card-title">Active Members</div><div class="card-val green" id="stat-members">&#8212;</div><div class="card-sub">mug + coffee + combo</div></div>
+        <div class="card"><div class="card-title">Next Event</div><div class="card-val teal" id="stat-event" style="font-size:18px;padding-top:6px">&#8212;</div><div class="card-sub" id="stat-event-sub">&#8212;</div></div>
+      </div>
+      <div class="grid2">
+        <div><div class="sec-label">Alerts</div><div id="dash-alerts"><div class="loading">Loading...</div></div></div>
+        <div><div class="sec-label">Today's Counts Due</div><div id="dash-counts"><div class="loading">Loading...</div></div></div>
+      </div>
+    </div>
+
+    <!-- INVENTORY -->
+    <div class="screen" id="screen-inventory">
+      <div class="page-title">Inventory</div>
+      <div class="sub-tabs">
+        <button class="sub-tab active" data-tab="inv-daily">Daily Count</button>
+        <button class="sub-tab" data-tab="inv-cycle">Cycle Count</button>
+        <button class="sub-tab" data-tab="inv-monthly">Monthly</button>
+        <button class="sub-tab" data-tab="inv-merch">Merchandise</button>
+        <button class="sub-tab" data-tab="inv-glass">Glassware</button>
+        <button class="sub-tab" data-tab="inv-loc">Locations</button>
+      </div>
+      <div class="sub-sec active" id="inv-daily"><div class="stub"><div class="stub-icon">DAILY</div><div class="stub-title">Daily Rotation Count</div><div class="stub-sub">Items assigned to today</div></div></div>
+      <div class="sub-sec" id="inv-cycle"><div class="stub"><div class="stub-icon">CYCLE</div><div class="stub-title">Cycle Count</div><div class="stub-sub">7-group rotation</div></div></div>
+      <div class="sub-sec" id="inv-monthly"><div class="stub"><div class="stub-icon">MONTHLY</div><div class="stub-title">Monthly Count</div><div class="stub-sub">Full inventory</div></div></div>
+      <div class="sub-sec" id="inv-merch"><div class="stub"><div class="stub-icon">MERCH</div><div class="stub-title">Merchandise</div><div class="stub-sub">Variants by size and color</div></div></div>
+      <div class="sub-sec" id="inv-glass"><div class="stub"><div class="stub-icon">GLASS</div><div class="stub-title">Glassware Counts</div><div class="stub-sub">8 types &middot; bar + storage</div></div></div>
+      <div class="sub-sec" id="inv-loc"><div class="stub"><div class="stub-icon">LOC</div><div class="stub-title">Storage Locations</div><div class="stub-sub">Named locations with photos</div></div></div>
+    </div>
+
+    <!-- ORDERS -->
+    <div class="screen" id="screen-orders">
+      <div class="page-title">Orders</div>
+      <div class="sub-tabs">
+        <button class="sub-tab active" data-tab="ord-builder">Order Builder</button>
+        <button class="sub-tab" data-tab="ord-suppliers">Suppliers</button>
+        <button class="sub-tab" data-tab="ord-history">History</button>
+      </div>
+      <div class="sub-sec active" id="ord-builder"><div class="stub"><div class="stub-icon">ORDER</div><div class="stub-title">Order Builder</div><div class="stub-sub">Scratch list to supplier items</div></div></div>
+      <div class="sub-sec" id="ord-suppliers"><div class="stub"><div class="stub-icon">SUP</div><div class="stub-title">Suppliers</div><div class="stub-sub">Contact &middot; method &middot; lead time</div></div></div>
+      <div class="sub-sec" id="ord-history"><div class="stub"><div class="stub-icon">HIST</div><div class="stub-title">Order History</div><div class="stub-sub">Past order lists</div></div></div>
+    </div>
+
+    <!-- BEERS & MENUS -->
+    <div class="screen" id="screen-beers">
+      <div class="page-title">Beers &amp; Menus</div>
+      <div class="sub-tabs">
+        <button class="sub-tab active" data-tab="beer-taplist">Tap List</button>
+        <button class="sub-tab" data-tab="beer-wine">Wine &amp; N/A</button>
+        <button class="sub-tab" data-tab="beer-awards">Awards</button>
+        <button class="sub-tab" data-tab="beer-gen">Menu Generator</button>
+      </div>
+
+      <!-- TAP LIST -->
+      <div class="sub-sec active" id="beer-taplist">
+        <div class="grid2">
+          <div class="grid2-col">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+              <div class="sec-label" style="margin:0" id="bn-form-label">Add New Beer</div>
+              <button class="btn btn-sm btn-secondary" id="bn-cancel-edit" style="display:none">&#10005; Cancel Edit</button>
+            </div>
+            <div class="card">
+              <div class="form-row">
+                <div class="form-grp"><label class="form-lbl">Name</label><input class="form-inp" type="text" id="bn-name" placeholder="e.g. Bronco Blonde"></div>
+                <div class="form-grp"><label class="form-lbl">Style</label><input class="form-inp" type="text" id="bn-style" placeholder="e.g. Blonde Ale"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-grp"><label class="form-lbl">ABV %</label><input class="form-inp" type="number" step="0.1" id="bn-abv" placeholder="e.g. 5.0"></div>
+                <div class="form-grp"><label class="form-lbl">Price</label><input class="form-inp" type="number" step="0.5" id="bn-price" placeholder="e.g. 6.50"></div>
+              </div>
+              <div class="form-grp"><label class="form-lbl">Category</label>
+                <select class="form-sel placeholder" id="bn-cat">
+                  <option value="" disabled selected>Select category</option>
+                  <option>Light &amp; Lager</option>
+                  <option>Ales &amp; IPAs</option>
+                  <option>Strong &amp; Specialty</option>
+                  <option>Dark</option>
+                  <option>Guest Tap</option>
+                  <option>Non-Alcoholic</option>
+                </select>
+              </div>
+              <div class="form-grp"><label class="form-lbl">Description</label>
+                <textarea class="form-ta" id="bn-desc" placeholder="e.g. Smooth and easy-drinking with a touch of honey sweetness and a clean finish" rows="4"></textarea>
+              </div>
+              <div class="form-grp"><label class="form-lbl">Badges</label>
+                <div class="badge-picker" id="bn-badges">
+                  <div class="badge-pill amber" data-badge="new_release"><div class="badge-pill-dot"></div>New Release</div>
+                  <div class="badge-pill purple" data-badge="back_again"><div class="badge-pill-dot"></div>Back Again</div>
+                  <div class="badge-pill green" data-badge="seasonal"><div class="badge-pill-dot"></div>Seasonal</div>
+                  <div class="badge-pill red" data-badge="limited"><div class="badge-pill-dot"></div>Limited</div>
+                  <div class="badge-pill blue" data-badge="collab"><div class="badge-pill-dot"></div>Collab</div>
+                  <div class="badge-pill" data-badge="lactose"><div class="badge-pill-dot"></div>Lactose</div>
+                  <div class="badge-pill" data-badge="wheat"><div class="badge-pill-dot"></div>Wheat</div>
+                </div>
+              </div>
+              <div id="beer-alert" style="display:none;padding:10px 14px;border-radius:6px;font-size:13px;margin-bottom:12px;font-family:'DM Mono',monospace;"></div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn btn-primary" id="btn-save-beer" style="flex:1">Add Beer to Tap List</button>
+              </div>
+            </div>
+          </div>
+          <div class="grid2-col">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+              <div class="sec-label" style="margin:0">Tap List</div>
+              <div style="display:flex;gap:6px;">
+                <button class="btn btn-sm" id="bf-current" style="background:rgba(0,229,204,0.12);color:var(--teal);border:1px solid rgba(0,229,204,0.3)">Current</button>
+                <button class="btn btn-sm btn-secondary" id="bf-retired">Retired</button>
+              </div>
+            </div>
+            <div id="beer-list"><div class="loading">Loading...</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- WINE & N/A -->
+      <div class="sub-sec" id="beer-wine">
+        <div class="grid2">
+          <div class="grid2-col">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+              <div class="sec-label" style="margin:0" id="wn-form-label">Add Item</div>
+              <button class="btn btn-sm btn-secondary" id="wn-cancel-edit" style="display:none">&#10005; Cancel Edit</button>
+            </div>
+            <div class="card">
+              <div class="form-row">
+                <div class="form-grp"><label class="form-lbl">Name</label><input class="form-inp" type="text" id="wn-name" placeholder="e.g. Louis Perdrier Brut"></div>
+                <div class="form-grp"><label class="form-lbl">Winery / Producer</label><input class="form-inp" type="text" id="wn-winery" placeholder="e.g. Louis Perdrier"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-grp"><label class="form-lbl">Region</label><input class="form-inp" type="text" id="wn-region" placeholder="e.g. Burgundy, France"></div>
+                <div class="form-grp">
+                  <label class="form-lbl">Type</label>
+                  <select class="form-sel placeholder" id="wn-type-sel">
+                    <option value="" disabled selected>Select type</option>
+                    <option>Champagne</option><option>Sparkling</option><option>Brut Rosé</option>
+                    <option>Dry Rosé</option><option>Chardonnay</option><option>Sauvignon Blanc</option>
+                    <option>Pinot Grigio</option><option>Riesling</option><option>Cabernet Sauvignon</option>
+                    <option>Dry Red</option><option>Golden Ale</option><option>IPA</option>
+                    <option>Light Lager</option><option>Root Beer</option><option>Cider</option>
+                    <option>Soda</option><option>Tea</option><option>Juice</option><option>Water</option>
+                    <option value="__other__">Other...</option>
+                  </select>
+                  <input class="form-inp type-other-inp" type="text" id="wn-type-other" placeholder="Enter type">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-grp"><label class="form-lbl">Category</label>
+                  <select class="form-sel" id="wn-cat">
+                    <option value="white">White</option><option value="red">Red</option>
+                    <option value="rosé">Rosé</option><option value="sparkling">Sparkling</option>
+                    <option value="na">N/A</option>
+                  </select>
+                </div>
+                <div class="form-grp"><label class="form-lbl">Display Group</label>
+                  <select class="form-sel" id="wn-group">
+                    <option>Wine by the Bottle</option><option>Wine by the Glass</option>
+                    <option>N/A Beer</option><option>N/A Options</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-grp"><label class="form-lbl">Description</label>
+                <textarea class="form-ta" id="wn-desc" placeholder="e.g. Served straight or brightened with fresh orange juice" rows="3"></textarea>
+              </div>
+              <div class="form-row">
+                <div class="form-grp"><label class="form-lbl">Glass / Per Unit Price</label><input class="form-inp" type="number" step="0.5" id="wn-pglass" placeholder="e.g. 6.00"></div>
+                <div class="form-grp"><label class="form-lbl">Bottle Price</label><input class="form-inp" type="number" step="0.5" id="wn-pbottle" placeholder="e.g. 20.00"></div>
+              </div>
+              <div class="form-grp"><label class="form-lbl">Badges</label>
+                <div class="badge-picker" id="wn-badges">
+                  <div class="badge-pill teal" data-badge="bottle"><div class="badge-pill-dot"></div>Bottle</div>
+                  <div class="badge-pill blue" data-badge="glass"><div class="badge-pill-dot"></div>Glass</div>
+                  <div class="badge-pill green" data-badge="can"><div class="badge-pill-dot"></div>Can</div>
+                  <div class="badge-pill amber" data-badge="new"><div class="badge-pill-dot"></div>New</div>
+                  <div class="badge-pill purple" data-badge="back_again"><div class="badge-pill-dot"></div>Back Again</div>
+                  <div class="badge-pill red" data-badge="seasonal"><div class="badge-pill-dot"></div>Seasonal</div>
+                  <div class="badge-pill" data-badge="limited"><div class="badge-pill-dot"></div>Limited</div>
+                </div>
+              </div>
+              <div id="wine-alert" style="display:none;padding:10px 14px;border-radius:6px;font-size:13px;margin-bottom:12px;font-family:'DM Mono',monospace;"></div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn btn-primary" id="btn-save-wine" style="flex:1">Add to Menu</button>
+              </div>
+            </div>
+          </div>
+          <div class="grid2-col">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+              <div class="sec-label" style="margin:0">Wine &amp; N/A</div>
+              <div style="display:flex;gap:6px;">
+                <button class="btn btn-sm" id="wf-active" style="background:rgba(0,229,204,0.12);color:var(--teal);border:1px solid rgba(0,229,204,0.3)">Active</button>
+                <button class="btn btn-sm btn-secondary" id="wf-archived">Archived</button>
+              </div>
+            </div>
+            <div id="wine-list"><div class="loading">Loading...</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub-sec" id="beer-awards"><div class="stub"><div class="stub-icon">AWARD</div><div class="stub-title">Awards</div><div class="stub-sub">Competitions &middot; assets &middot; beer awards</div></div></div>
+      <div class="sub-sec" id="beer-gen"><div class="stub"><div class="stub-icon">GEN</div><div class="stub-title">Menu Generator</div><div class="stub-sub">Tap menu &middot; bingo &middot; trivia &middot; themes</div></div></div>
+    </div>
+
+    <!-- EVENTS -->
+    <div class="screen" id="screen-events">
+      <div class="page-title">Events &amp; Food Trucks</div>
+      <div class="sub-tabs">
+        <button class="sub-tab active" data-tab="evt-lineup">Event Lineup</button>
+        <button class="sub-tab" data-tab="evt-trucks">Food Trucks</button>
+      </div>
+      <div class="sub-sec active" id="evt-lineup"><div class="stub"><div class="stub-icon">EVT</div><div class="stub-title">Event Lineup</div><div class="stub-sub">Create &middot; manage &middot; U There pipeline</div></div></div>
+      <div class="sub-sec" id="evt-trucks"><div class="stub"><div class="stub-icon">TRUCK</div><div class="stub-title">Food Trucks</div><div class="stub-sub">Profiles &middot; schedule &middot; foot traffic</div></div></div>
+    </div>
+
+    <!-- SCHEDULE -->
+    <div class="screen" id="screen-schedule">
+      <div class="page-title">Employee Schedule</div>
+      <div class="stub"><div class="stub-icon">SCHED</div><div class="stub-title">Schedule Builder</div><div class="stub-sub">Pay period to shifts by role</div></div>
+    </div>
+
+    <!-- MEMBERS -->
+    <div class="screen" id="screen-members">
+      <div class="page-title">Members</div>
+      <div class="sub-tabs">
+        <button class="sub-tab active" data-tab="mbr-list">Member List</button>
+        <button class="sub-tab" data-tab="mbr-billing">Billing</button>
+      </div>
+      <div class="sub-sec active" id="mbr-list"><div class="stub"><div class="stub-icon">MBR</div><div class="stub-title">Member Admin</div><div class="stub-sub">Search &middot; edit &middot; membership types</div></div></div>
+      <div class="sub-sec" id="mbr-billing"><div class="stub"><div class="stub-icon">BILL</div><div class="stub-title">Billing Status</div><div class="stub-sub">Active &middot; overdue &middot; cancelled</div></div></div>
+    </div>
+
+    <!-- ADMIN -->
+    <div class="screen" id="screen-admin">
+      <div class="page-title">Admin</div>
+      <div id="admin-locked" style="display:none"><div class="stub"><div class="stub-icon">LOCK</div><div class="stub-title">Manager Access Required</div></div></div>
+      <div id="admin-content" style="display:none">
+        <div class="sub-tabs">
+          <button class="sub-tab active" data-tab="adm-users">Staff Users</button>
+          <button class="sub-tab" data-tab="adm-settings">Settings</button>
+        </div>
+        <div class="sub-sec active" id="adm-users"><div class="stub"><div class="stub-icon">USERS</div><div class="stub-title">Staff Management</div><div class="stub-sub">Roles &middot; PIN resets &middot; access</div></div></div>
+        <div class="sub-sec" id="adm-settings"><div class="stub"><div class="stub-icon">SET</div><div class="stub-title">Settings</div></div></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var SBURL='https://tmbvkusticlunsmqjfty.supabase.co';
+var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtYnZrdXN0aWNsdW5zbXFqZnR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MzMwOTMsImV4cCI6MjA5NDEwOTA5M30.qR-fKM2P7dAA1zyxeLcuU00JITl_Q0k_8x6HNIXq5P0';
+var H={'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json','Prefer':'return=representation'};
+var me=null,selUser=null,pinBuf='',cPin1='',cStage='first';
+var beerFilter='current',beers=[],selBeer=null,beerEditMode=false;
+var wineFilter='active',wines=[],selWine=null,wineEditMode=false;
+
+async function sb(path,opts){var r=await fetch(SBURL+'/rest/v1/'+path,Object.assign({headers:H},opts||{}));var t=await r.text();return t?JSON.parse(t):[];}
+function toast(msg,type){var el=document.getElementById('toast');el.textContent=msg;el.className='toast show'+(type?' '+type:'');clearTimeout(el._t);el._t=setTimeout(function(){el.className='toast';},3000);}
+function showStep(id){document.querySelectorAll('.login-step').forEach(function(s){s.classList.remove('active');});document.getElementById(id).classList.add('active');}
+
+// ── AUTH ──
+async function loadUsers(){
+  var el=document.getElementById('user-list');
+  var tim=setTimeout(function(){el.innerHTML='<div style="font-size:12px;color:var(--sub)">Timed out.</div>';},8000);
+  try{
+    var rows=await sb('users?select=id,display_name,role&order=display_name.asc');
+    clearTimeout(tim);
+    if(!rows.length){el.innerHTML='<div style="font-size:13px;color:var(--sub)">No users found.</div>';return;}
+    el.innerHTML='';
+    rows.forEach(function(u){
+      var name=u.display_name||'Unknown';
+      var ini=name.split(' ').map(function(p){return p[0];}).join('').substring(0,2).toUpperCase();
+      var d=document.createElement('div');d.className='user-btn';d.id='ub-'+u.id;
+      d.innerHTML='<div class="user-initials">'+ini+'</div><div><div class="user-name">'+name+'</div><div class="user-role">'+u.role+'</div></div>';
+      d.addEventListener('click',function(){pickUser(u.id,name,u.role);});
+      el.appendChild(d);
+    });
+  }catch(e){clearTimeout(tim);el.innerHTML='<div style="font-size:12px;color:var(--sub)">Error: '+e.message+'</div>';}
+}
+function pickUser(id,name,role){selUser=id;document.querySelectorAll('.user-btn').forEach(function(b){b.classList.remove('selected');});var b=document.getElementById('ub-'+id);if(b)b.classList.add('selected');setTimeout(function(){goPin(id,name);},150);}
+async function goPin(id,name){
+  try{var rows=await sb('users?id=eq.'+id+'&select=pin_hash');var has=rows.length&&rows[0]&&rows[0].pin_hash&&rows[0].pin_hash.length>0;
+    if(has){document.getElementById('pin-greeting').textContent='Welcome, '+name.split(' ')[0];pinBuf='';dots(false);showStep('step-pin');}
+    else{cPin1='';pinBuf='';cStage='first';document.getElementById('create-lbl').textContent='Set PIN for '+name.split(' ')[0];cdots();showStep('step-create');}
+  }catch(e){document.getElementById('pin-greeting').textContent='Welcome, '+name.split(' ')[0];pinBuf='';dots(false);showStep('step-pin');}
+}
+function dots(err){for(var i=0;i<4;i++){var d=document.getElementById('d'+i);d.className='pin-dot'+(err?' error':(i<pinBuf.length?' filled':''));}}
+function cdots(){var buf=cStage==='first'?cPin1:pinBuf;for(var i=0;i<4;i++)document.getElementById('c'+i).className='pin-dot'+(i<buf.length?' filled':'');}
+function pressPin(n){if(pinBuf.length>=4)return;pinBuf+=n;document.getElementById('pin-err').textContent='';dots(false);if(pinBuf.length===4)setTimeout(checkPin,100);}
+function backPin(){pinBuf=pinBuf.slice(0,-1);dots(false);}
+async function checkPin(){try{var rows=await sb('users?id=eq.'+selUser+'&select=id,display_name,role,pin_hash');if(!rows.length||rows[0].pin_hash!==pinBuf){pinFail();return;}loginOk(rows[0]);}catch(e){pinFail();}}
+function pinFail(){dots(true);document.getElementById('pin-err').textContent='Incorrect PIN';setTimeout(function(){pinBuf='';dots(false);document.getElementById('pin-err').textContent='';},1200);}
+function pressCreate(n){
+  var buf=cStage==='first'?cPin1:pinBuf;if(buf.length>=4)return;buf+=n;
+  if(cStage==='first')cPin1=buf;else pinBuf=buf;
+  document.getElementById('create-err').textContent='';cdots();
+  if(buf.length===4)setTimeout(function(){
+    if(cStage==='first'){cStage='confirm';pinBuf='';document.getElementById('create-lbl').textContent='Confirm your PIN';cdots();}
+    else{if(cPin1!==pinBuf){for(var i=0;i<4;i++)document.getElementById('c'+i).className='pin-dot error';document.getElementById('create-err').textContent="PINs don't match";setTimeout(function(){cPin1='';pinBuf='';cStage='first';document.getElementById('create-lbl').textContent='Try again';cdots();},1200);}else{savePin();}}
+  },100);
+}
+function backCreate(){if(cStage==='first')cPin1=cPin1.slice(0,-1);else pinBuf=pinBuf.slice(0,-1);cdots();}
+async function savePin(){try{await sb('users?id=eq.'+selUser,{method:'PATCH',body:JSON.stringify({pin_hash:cPin1})});var rows=await sb('users?id=eq.'+selUser+'&select=id,display_name,role');if(rows.length)loginOk(rows[0]);}catch(e){document.getElementById('create-err').textContent='Error saving PIN';}}
+function backToUsers(){selUser=null;pinBuf='';cPin1='';cStage='first';document.querySelectorAll('.user-btn').forEach(function(b){b.classList.remove('selected');});showStep('step-pick');}
+function loginOk(user){me=user;document.getElementById('login-screen').style.display='none';document.getElementById('app-shell').classList.add('visible');document.getElementById('hdr-name').textContent=user.display_name;document.getElementById('nav-admin').style.display=(user.role==='manager'||user.role==='owner')?'':'none';loadDash();}
+function signOut(){me=null;selUser=null;pinBuf='';document.getElementById('app-shell').classList.remove('visible');document.getElementById('login-screen').style.display='flex';showStep('step-pick');goScreen('dashboard');}
+
+// ── NAVIGATION ──
+function goScreen(name){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('screen-'+name).classList.add('active');
+  var btn=document.querySelector('[data-screen="'+name+'"]');if(btn)btn.classList.add('active');
+  if(name==='admin'){var ok=me&&(me.role==='manager'||me.role==='owner');document.getElementById('admin-locked').style.display=ok?'none':'block';document.getElementById('admin-content').style.display=ok?'block':'none';}
+  if(name==='dashboard')loadDash();
+  if(name==='beers')loadBeers();
+}
+function goTab(tabId){
+  var panel=document.getElementById(tabId);if(!panel)return;
+  var screen=panel.closest('.screen');
+  screen.querySelectorAll('.sub-tab').forEach(function(b){b.classList.remove('active');});
+  screen.querySelectorAll('.sub-sec').forEach(function(s){s.classList.remove('active');});
+  panel.classList.add('active');
+  var btn=screen.querySelector('[data-tab="'+tabId+'"]');if(btn)btn.classList.add('active');
+  // Clear edits when switching tabs
+  if(tabId==='beer-taplist'){cancelWineEdit();}
+  if(tabId==='beer-wine'){cancelBeerEdit();loadWines();}
+  if(tabId==='beer-awards'||tabId==='beer-gen'){cancelBeerEdit();cancelWineEdit();}
+}
+
+// ── EVENTS ──
+document.querySelectorAll('.nav-btn[data-screen]').forEach(function(b){b.addEventListener('click',function(){goScreen(this.dataset.screen);});});
+document.querySelectorAll('.sub-tab[data-tab]').forEach(function(b){b.addEventListener('click',function(){goTab(this.dataset.tab);});});
+document.getElementById('btn-signout').addEventListener('click',signOut);
+document.getElementById('btn-back').addEventListener('click',backToUsers);
+document.getElementById('btn-cancel').addEventListener('click',backToUsers);
+['1','2','3','4','5','6','7','8','9','0'].forEach(function(n){document.getElementById('p'+n).addEventListener('click',function(){pressPin(n);});document.getElementById('cp'+n).addEventListener('click',function(){pressCreate(n);});});
+document.getElementById('pbk').addEventListener('click',backPin);
+document.getElementById('cpbk').addEventListener('click',backCreate);
+document.getElementById('bf-current').addEventListener('click',function(){setFilter('current');});
+document.getElementById('bf-retired').addEventListener('click',function(){setFilter('retired');});
+document.getElementById('btn-save-beer').addEventListener('click',saveBeer);
+document.getElementById('bn-cancel-edit').addEventListener('click',cancelBeerEdit);
+document.getElementById('wf-active').addEventListener('click',function(){setWineFilter('active');});
+document.getElementById('wf-archived').addEventListener('click',function(){setWineFilter('archived');});
+document.getElementById('btn-save-wine').addEventListener('click',saveWine);
+document.getElementById('wn-cancel-edit').addEventListener('click',cancelWineEdit);
+document.getElementById('bn-cat').addEventListener('change',function(){this.classList.remove('placeholder');});
+document.getElementById('wn-type-sel').addEventListener('change',function(){
+  this.classList.remove('placeholder');
+  var other=document.getElementById('wn-type-other');
+  other.style.display=this.value==='__other__'?'block':'none';
+  if(this.value!=='__other__')other.value='';
+});
+
+// Badge pills
+document.querySelectorAll('#bn-badges .badge-pill').forEach(function(p){p.addEventListener('click',function(){this.classList.toggle('selected');});});
+document.querySelectorAll('#wn-badges .badge-pill').forEach(function(p){p.addEventListener('click',function(){this.classList.toggle('selected');});});
+function getSelectedBadges(id){var s=[];document.querySelectorAll('#'+id+' .badge-pill.selected').forEach(function(p){s.push(p.dataset.badge);});return s;}
+function clearBadgePills(id){document.querySelectorAll('#'+id+' .badge-pill').forEach(function(p){p.classList.remove('selected');});}
+function setBadgePills(id,arr){clearBadgePills(id);(arr||[]).forEach(function(b){var p=document.querySelector('#'+id+' [data-badge="'+b+'"]');if(p)p.classList.add('selected');});}
+
+// Close all popovers on outside click
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.status-cell')){
+    document.querySelectorAll('.status-popover.show').forEach(function(p){p.classList.remove('show');});
+  }
+});
+
+// ── BADGE STATUS CELL ──
+function makeBadgeLabels(badges,type){
+  // type: 'beer' or 'wine'
+  var labelMap={
+    // beer
+    new_release:'New Release',back_again:'Back Again',seasonal:'Seasonal',
+    limited:'Limited',collab:'Collab',lactose:'Lactose',wheat:'Wheat',
+    // wine
+    bottle:'Bottle',glass:'Glass',can:'Can',new:'New'
+  };
+  var colorMap={
+    new_release:'badge-amber',back_again:'badge-purple',seasonal:'badge-green',
+    limited:'badge-red',collab:'badge-teal',lactose:'badge-muted',wheat:'badge-muted',
+    bottle:'badge-teal',glass:'badge-blue',can:'badge-green',new:'badge-amber',
+    back_again:'badge-purple',seasonal:'badge-red'
+  };
+  return badges.map(function(b){return '<span class="badge '+(colorMap[b]||'badge-muted')+'" style="margin:2px">'+(labelMap[b]||b)+'</span>';}).join('');
+}
+
+function makeStatusCell(item, type){
+  // Returns HTML string for the status column
+  if(item.status==='archived') return '<span class="badge badge-red">Retired</span>';
+  var badges = type==='beer' ? (item.badges||[]) : (item.badge||[]);
+  // For beer: filter out serving badges — all are promo badges
+  // For wine: separate serving badges (bottle/glass/can) from promo badges
+  var hasBadges = badges.length > 0;
+  if(!hasBadges) return '<span style="font-size:11px;color:var(--muted)">Active</span>';
+  var uid='pop-'+item.id.replace(/-/g,'').substring(0,8);
+  var html='<div class="status-cell">';
+  html+='<span class="badge badge-teal" style="cursor:pointer" onclick="togglePopover(\''+uid+'\')" title="Click to see badges">Badged</span>';
+  html+='<div class="status-popover" id="'+uid+'">';
+  html+='<div class="status-popover-title">Assigned Badges</div>';
+  html+='<div class="status-popover-badges">'+makeBadgeLabels(badges,type)+'</div>';
+  html+='<div class="status-popover-arrow"></div>';
+  html+='</div></div>';
+  return html;
+}
+
+function togglePopover(id){
+  // Close others first
+  document.querySelectorAll('.status-popover.show').forEach(function(p){if(p.id!==id)p.classList.remove('show');});
+  var el=document.getElementById(id);if(el)el.classList.toggle('show');
+}
+
+// ── DASHBOARD ──
+async function loadDash(){
+  var days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var mons=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var d=new Date();
+  document.getElementById('dash-date').textContent=days[d.getDay()]+', '+mons[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear();
+  try{
+    var res=await Promise.allSettled([
+      sb('inventory_items?reorder_count=gt.0&select=id').catch(function(){return[];}),
+      sb('order_lists?status=neq.complete&select=id').catch(function(){return[];}),
+      sb('members?is_active=eq.true&select=id').catch(function(){return[];}),
+      sb('events?event_date=gte.'+new Date().toISOString()+'&order=event_date.asc&limit=1').catch(function(){return[];})
+    ]);
+    var al=res[0].value||[],ord=res[1].value||[],mem=res[2].value||[],ev=res[3].value||[];
+    document.getElementById('stat-alerts').textContent=al.length||'0';
+    document.getElementById('stat-orders').textContent=ord.length||'0';
+    document.getElementById('stat-members').textContent=mem.length||'0';
+    if(ev.length){var e=ev[0],ed=new Date(e.event_date||e.start_date);document.getElementById('stat-event').textContent=e.event_name||e.name||'Event';document.getElementById('stat-event-sub').textContent=mons[ed.getMonth()]+' '+ed.getDate();}
+    else{document.getElementById('stat-event').textContent='None';document.getElementById('stat-event-sub').textContent='no upcoming events';}
+  }catch(e){console.error(e);}
+  document.getElementById('dash-alerts').innerHTML='<div style="padding:10px 14px;border-radius:6px;background:rgba(61,196,154,0.08);border:1px solid rgba(61,196,154,0.2);color:var(--green);font-size:13px;margin-bottom:8px">&#10003; Connected to Supabase</div>';
+  var dn=days[new Date().getDay()];
+  document.getElementById('dash-counts').innerHTML='<div class="card"><div class="card-title" style="margin-bottom:12px">Today &#8212; '+dn+'</div><div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px"><span>Daily Rotation</span><span class="badge badge-amber">Due</span></div><div style="display:flex;justify-content:space-between;padding:10px 0;font-size:13px"><span>Glassware Count</span><span class="badge badge-muted">As needed</span></div></div>';
+}
+
+// ── BEERS ──
+async function loadBeers(){
+  var el=document.getElementById('beer-list');
+  el.innerHTML='<div class="loading">Loading...</div>';
+  try{beers=await sb('beers?order=category.asc,name.asc&select=*');renderBeers();}
+  catch(e){el.innerHTML='<div class="loading">Error: '+e.message+'</div>';}
+}
+function setFilter(f){
+  beerFilter=f;
+  var cur=document.getElementById('bf-current'),ret=document.getElementById('bf-retired');
+  if(f==='current'){cur.style.cssText='background:rgba(0,229,204,0.12);color:var(--teal);border:1px solid rgba(0,229,204,0.3);padding:6px 14px;font-size:12px;font-weight:600;border-radius:6px;cursor:pointer';ret.style.cssText='';ret.className='btn btn-sm btn-secondary';}
+  else{ret.style.cssText='background:rgba(255,77,106,0.12);color:var(--red);border:1px solid rgba(255,77,106,0.3);padding:6px 14px;font-size:12px;font-weight:600;border-radius:6px;cursor:pointer';cur.style.cssText='';cur.className='btn btn-sm btn-secondary';}
+  selBeer=null;renderBeers();
+}
+function renderBeers(){
+  var el=document.getElementById('beer-list');
+  var list=beers.filter(function(b){return beerFilter==='retired'?b.status==='archived':b.status==='active';});
+  if(!list.length){el.innerHTML='<div class="loading">'+(beerFilter==='retired'?'No archived beers':'No active beers')+'</div>';return;}
+  var cats={},order=['Light & Lager','Ales & IPAs','Strong & Specialty','Dark','Guest Tap','Non-Alcoholic','Uncategorized'];
+  list.forEach(function(b){var c=b.category||'Uncategorized';if(!cats[c])cats[c]=[];cats[c].push(b);});
+  var wrap=document.createElement('div');wrap.className='tbl-wrap';
+  var tbl=document.createElement('table');
+  var th=document.createElement('thead');th.innerHTML='<tr><th>#</th><th>Name</th><th>Style</th><th>ABV</th><th>Status</th></tr>';tbl.appendChild(th);
+  var tb=document.createElement('tbody');
+  order.forEach(function(cat){
+    if(!cats[cat])return;
+    var hr=document.createElement('tr');hr.innerHTML='<td colspan="5" style="background:var(--raised);font-size:10px;font-family:DM Mono,monospace;color:var(--muted);letter-spacing:2px;text-transform:uppercase;padding:6px 16px">'+cat+'</td>';tb.appendChild(hr);
+    cats[cat].forEach(function(b){
+      var tr=document.createElement('tr');tr.style.cursor='pointer';
+      if(b.id===selBeer)tr.style.background='rgba(0,229,204,0.06)';
+      tr.innerHTML='<td style="font-family:DM Mono,monospace;font-size:11px;color:var(--muted)">'+(b.ref_id||'')+'</td>'
+        +'<td style="font-weight:500'+(b.id===selBeer?';color:var(--teal)':'')+'">'+b.name+'</td>'
+        +'<td style="font-size:12px;color:var(--sub)">'+(b.style||'')+'</td>'
+        +'<td style="font-family:DM Mono,monospace;font-size:12px">'+(b.abv?b.abv+'%':'')+'</td>'
+        +'<td>'+makeStatusCell(b,'beer')+'</td>';
+      tr.addEventListener('click',function(e){if(e.target.closest('.status-cell'))return;pickBeer(b.id);});
+      tb.appendChild(tr);
+    });
+  });
+  tbl.appendChild(tb);wrap.appendChild(tbl);el.innerHTML='';el.appendChild(wrap);
+}
+function pickBeer(id){
+  selBeer=id;renderBeers();
+  var b=beers.find(function(x){return x.id===id;});if(!b)return;
+  loadBeerIntoForm(b);
+}
+function loadBeerIntoForm(b){
+  beerEditMode=true;selBeer=b.id;
+  document.getElementById('bn-form-label').textContent='Edit Beer';
+  document.getElementById('btn-save-beer').textContent='Save Changes';
+  document.getElementById('bn-cancel-edit').style.display='';
+  document.getElementById('bn-name').value=b.name||'';
+  document.getElementById('bn-style').value=b.style||'';
+  document.getElementById('bn-abv').value=b.abv||'';
+  document.getElementById('bn-price').value=b.price||'';
+  var catSel=document.getElementById('bn-cat');catSel.value=b.category||'';catSel.classList.remove('placeholder');
+  document.getElementById('bn-desc').value=b.description||'';
+  setBadgePills('bn-badges',b.badges||[]);
+  var old=document.getElementById('bn-archive-btn');if(old)old.remove();
+  var abtn=document.createElement('button');abtn.id='bn-archive-btn';
+  if(b.status!=='archived'){abtn.className='btn btn-sm btn-danger';abtn.textContent='Retire Beer';abtn.addEventListener('click',function(){retireBeer(b.id,b.name);});}
+  else{abtn.className='btn btn-sm btn-success';abtn.textContent='Restore to Tap';abtn.addEventListener('click',function(){restoreBeer(b.id,b.name);});}
+  document.getElementById('btn-save-beer').parentNode.insertBefore(abtn,document.getElementById('btn-save-beer'));
+  document.getElementById('bn-name').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function cancelBeerEdit(){
+  beerEditMode=false;selBeer=null;
+  document.getElementById('bn-form-label').textContent='Add New Beer';
+  document.getElementById('btn-save-beer').textContent='Add Beer to Tap List';
+  document.getElementById('bn-cancel-edit').style.display='none';
+  ['bn-name','bn-style','bn-abv','bn-price'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('bn-desc').value='';
+  var catSel=document.getElementById('bn-cat');catSel.value='';catSel.classList.add('placeholder');
+  clearBadgePills('bn-badges');
+  var old=document.getElementById('bn-archive-btn');if(old)old.remove();
+  renderBeers();
+}
+async function saveBeer(){
+  var name=document.getElementById('bn-name').value.trim();
+  if(!name){beerAlert('Name required','error');return;}
+  var cat=document.getElementById('bn-cat').value;
+  if(!cat){beerAlert('Category required','error');return;}
+  var payload={name:name,style:document.getElementById('bn-style').value.trim()||null,abv:parseFloat(document.getElementById('bn-abv').value)||null,price:parseFloat(document.getElementById('bn-price').value)||null,description:document.getElementById('bn-desc').value.trim()||null,category:cat,badges:getSelectedBadges('bn-badges')};
+  try{
+    if(beerEditMode&&selBeer){await sb('beers?id=eq.'+selBeer,{method:'PATCH',body:JSON.stringify(payload)});toast(name+' updated');}
+    else{payload.status='active';await sb('beers',{method:'POST',body:JSON.stringify(payload)});beerAlert('Added: '+name,'success');}
+    cancelBeerEdit();await loadBeers();
+  }catch(e){beerAlert('Error: '+e.message,'error');}
+}
+async function retireBeer(id,name){if(!confirm('Retire '+name+'? Can be restored later.'))return;try{await sb('beers?id=eq.'+id,{method:'PATCH',body:JSON.stringify({status:'archived'})});toast(name+' retired');cancelBeerEdit();beerFilter='current';setFilter('current');await loadBeers();}catch(e){toast('Error','error');}}
+async function restoreBeer(id,name){if(!confirm('Restore '+name+' to tap list?'))return;try{await sb('beers?id=eq.'+id,{method:'PATCH',body:JSON.stringify({status:'active'})});toast(name+' restored');cancelBeerEdit();beerFilter='current';setFilter('current');await loadBeers();}catch(e){toast('Error','error');}}
+function beerAlert(msg,type){var el=document.getElementById('beer-alert');el.textContent=msg;el.style.display='block';el.style.background=type==='success'?'rgba(61,196,154,0.12)':'rgba(255,77,106,0.12)';el.style.border='1px solid '+(type==='success'?'var(--green)':'var(--red)');el.style.color=type==='success'?'var(--green)':'var(--red)';setTimeout(function(){el.style.display='none';},4000);}
+
+// ── WINE & N/A ──
+async function loadWines(){
+  var el=document.getElementById('wine-list');
+  el.innerHTML='<div class="loading">Loading...</div>';
+  try{
+    wines=await sb('wine_menu?select=*');
+    wines.sort(function(a,b){
+      var gOrder={'Wine by the Bottle':0,'Wine by the Glass':1,'N/A Beer':2,'N/A Options':3};
+      var ga=gOrder[a.display_group]!=null?gOrder[a.display_group]:99,gb=gOrder[b.display_group]!=null?gOrder[b.display_group]:99;
+      if(ga!==gb)return ga-gb;
+      if(a.display_group==='Wine by the Bottle'||a.display_group==='Wine by the Glass'){return (Number(b.price_bottle)||0)-(Number(a.price_bottle)||0);}
+      return (a.sort_order||99)-(b.sort_order||99);
+    });
+    renderWines();
+  }catch(e){el.innerHTML='<div class="loading">Error: '+e.message+'</div>';}
+}
+function setWineFilter(f){
+  wineFilter=f;
+  var act=document.getElementById('wf-active'),arc=document.getElementById('wf-archived');
+  if(f==='active'){act.style.cssText='background:rgba(0,229,204,0.12);color:var(--teal);border:1px solid rgba(0,229,204,0.3);padding:6px 14px;font-size:12px;font-weight:600;border-radius:6px;cursor:pointer';arc.style.cssText='';arc.className='btn btn-sm btn-secondary';}
+  else{arc.style.cssText='background:rgba(255,77,106,0.12);color:var(--red);border:1px solid rgba(255,77,106,0.3);padding:6px 14px;font-size:12px;font-weight:600;border-radius:6px;cursor:pointer';act.style.cssText='';act.className='btn btn-sm btn-secondary';}
+  selWine=null;renderWines();
+}
+function renderWines(){
+  var el=document.getElementById('wine-list');
+  var list=wines.filter(function(w){return wineFilter==='archived'?w.status==='archived':w.status==='active';});
+  if(!list.length){el.innerHTML='<div class="loading">'+(wineFilter==='archived'?'No archived items':'No active items')+'</div>';return;}
+  var groups={},groupOrder=['Wine by the Bottle','Wine by the Glass','N/A Beer','N/A Options'];
+  list.forEach(function(w){var g=w.display_group||'Other';if(!groups[g])groups[g]=[];groups[g].push(w);});
+  var wrap=document.createElement('div');wrap.className='tbl-wrap';
+  var tbl=document.createElement('table');
+  var th=document.createElement('thead');th.innerHTML='<tr><th>Name</th><th>Winery</th><th>Type</th><th>Glass/Unit</th><th>Bottle</th><th>Status</th></tr>';tbl.appendChild(th);
+  var tb=document.createElement('tbody');
+  groupOrder.forEach(function(grp){
+    if(!groups[grp])return;
+    var hr=document.createElement('tr');hr.innerHTML='<td colspan="6" style="background:var(--raised);font-size:10px;font-family:DM Mono,monospace;color:var(--muted);letter-spacing:2px;text-transform:uppercase;padding:6px 16px">'+grp+'</td>';tb.appendChild(hr);
+    groups[grp].forEach(function(w){
+      var tr=document.createElement('tr');tr.style.cursor='pointer';
+      if(w.id===selWine)tr.style.background='rgba(0,229,204,0.06)';
+      tr.innerHTML='<td style="font-weight:500'+(w.id===selWine?';color:var(--teal)':'')+'">'+w.name+'</td>'
+        +'<td style="font-size:12px;color:var(--sub)">'+(w.winery||'')+'</td>'
+        +'<td style="font-size:12px;color:var(--sub)">'+(w.type||'')+'</td>'
+        +'<td style="font-family:DM Mono,monospace;font-size:12px">'+(w.price_glass?'$'+Number(w.price_glass).toFixed(2):'')+'</td>'
+        +'<td style="font-family:DM Mono,monospace;font-size:12px">'+(w.price_bottle?'$'+Number(w.price_bottle).toFixed(2):'')+'</td>'
+        +'<td>'+makeStatusCell(w,'wine')+'</td>';
+      tr.addEventListener('click',function(e){if(e.target.closest('.status-cell'))return;pickWine(w.id);});
+      tb.appendChild(tr);
+    });
+  });
+  tbl.appendChild(tb);wrap.appendChild(tbl);el.innerHTML='';el.appendChild(wrap);
+}
+function getWineTypeValue(){var sel=document.getElementById('wn-type-sel');if(sel.value==='__other__')return document.getElementById('wn-type-other').value.trim();return sel.value||'';}
+function setWineTypeValue(val){
+  var sel=document.getElementById('wn-type-sel'),other=document.getElementById('wn-type-other');
+  var found=false;for(var i=0;i<sel.options.length;i++){if(sel.options[i].text===val||sel.options[i].value===val){found=true;sel.value=sel.options[i].value;break;}}
+  if(found&&sel.value!=='__other__'){sel.classList.remove('placeholder');other.style.display='none';}
+  else if(val){sel.value='__other__';sel.classList.remove('placeholder');other.style.display='block';other.value=val;}
+  else{sel.value='';sel.classList.add('placeholder');other.style.display='none';}
+}
+function pickWine(id){selWine=id;renderWines();var w=wines.find(function(x){return x.id===id;});if(!w)return;loadWineIntoForm(w);}
+function loadWineIntoForm(w){
+  wineEditMode=true;selWine=w.id;
+  document.getElementById('wn-form-label').textContent='Edit Item';
+  document.getElementById('btn-save-wine').textContent='Save Changes';
+  document.getElementById('wn-cancel-edit').style.display='';
+  document.getElementById('wn-name').value=w.name||'';
+  document.getElementById('wn-winery').value=w.winery||'';
+  document.getElementById('wn-region').value=w.region||'';
+  setWineTypeValue(w.type||'');
+  document.getElementById('wn-cat').value=w.category||'white';
+  document.getElementById('wn-group').value=w.display_group||'Wine by the Bottle';
+  document.getElementById('wn-desc').value=w.description||'';
+  document.getElementById('wn-pglass').value=w.price_glass||'';
+  document.getElementById('wn-pbottle').value=w.price_bottle||'';
+  setBadgePills('wn-badges',w.badge||[]);
+  var old=document.getElementById('wn-archive-btn');if(old)old.remove();
+  var abtn=document.createElement('button');abtn.id='wn-archive-btn';
+  if(w.status!=='archived'){abtn.className='btn btn-sm btn-danger';abtn.textContent='Archive Item';abtn.addEventListener('click',function(){archiveWine(w.id,w.name);});}
+  else{abtn.className='btn btn-sm btn-success';abtn.textContent='Restore Item';abtn.addEventListener('click',function(){restoreWine(w.id,w.name);});}
+  document.getElementById('btn-save-wine').parentNode.insertBefore(abtn,document.getElementById('btn-save-wine'));
+  document.getElementById('wn-name').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function cancelWineEdit(){
+  wineEditMode=false;selWine=null;
+  document.getElementById('wn-form-label').textContent='Add Item';
+  document.getElementById('btn-save-wine').textContent='Add to Menu';
+  document.getElementById('wn-cancel-edit').style.display='none';
+  ['wn-name','wn-winery','wn-region','wn-desc','wn-pglass','wn-pbottle'].forEach(function(id){document.getElementById(id).value='';});
+  var sel=document.getElementById('wn-type-sel');sel.value='';sel.classList.add('placeholder');
+  document.getElementById('wn-type-other').style.display='none';document.getElementById('wn-type-other').value='';
+  document.getElementById('wn-cat').value='white';
+  document.getElementById('wn-group').value='Wine by the Bottle';
+  clearBadgePills('wn-badges');
+  var old=document.getElementById('wn-archive-btn');if(old)old.remove();
+  if(wines.length)renderWines();
+}
+async function saveWine(){
+  var name=document.getElementById('wn-name').value.trim();
+  if(!name){wineAlert('Name required','error');return;}
+  var payload={name:name,winery:document.getElementById('wn-winery').value.trim()||null,region:document.getElementById('wn-region').value.trim()||null,type:getWineTypeValue()||null,category:document.getElementById('wn-cat').value,display_group:document.getElementById('wn-group').value,description:document.getElementById('wn-desc').value.trim()||null,price_glass:parseFloat(document.getElementById('wn-pglass').value)||null,price_bottle:parseFloat(document.getElementById('wn-pbottle').value)||null,badge:getSelectedBadges('wn-badges'),status:'active'};
+  try{
+    if(wineEditMode&&selWine){await sb('wine_menu?id=eq.'+selWine,{method:'PATCH',body:JSON.stringify(payload)});toast(name+' updated');}
+    else{await sb('wine_menu',{method:'POST',body:JSON.stringify(payload)});toast(name+' added');}
+    cancelWineEdit();await loadWines();
+  }catch(e){wineAlert('Error: '+e.message,'error');}
+}
+function wineAlert(msg,type){var el=document.getElementById('wine-alert');el.textContent=msg;el.style.display='block';el.style.background=type==='success'?'rgba(61,196,154,0.12)':'rgba(255,77,106,0.12)';el.style.border='1px solid '+(type==='success'?'var(--green)':'var(--red)');el.style.color=type==='success'?'var(--green)':'var(--red)';setTimeout(function(){el.style.display='none';},4000);}
+async function archiveWine(id,name){if(!confirm('Archive '+name+'? Can be restored later.'))return;try{await sb('wine_menu?id=eq.'+id,{method:'PATCH',body:JSON.stringify({status:'archived'})});toast(name+' archived');cancelWineEdit();await loadWines();}catch(e){toast('Error','error');}}
+async function restoreWine(id,name){if(!confirm('Restore '+name+' to active?'))return;try{await sb('wine_menu?id=eq.'+id,{method:'PATCH',body:JSON.stringify({status:'active'})});toast(name+' restored');wineFilter='active';setWineFilter('active');cancelWineEdit();await loadWines();}catch(e){toast('Error','error');}}
+
+loadUsers();
+</script>
+</body>
+</html>
